@@ -3,6 +3,8 @@ version: '3.3'
 volumes:
   taskd: {}
   web:   {}
+  ssl:   {}
+  certs: {}
 
 networks:
   public:  { driver: overlay, internal: false }
@@ -15,10 +17,14 @@ services:
   proxy:
     image:      dockercloud/haproxy:1.6.6
     networks:   [ public, private ]
+    volumes:    [ 'ssl:/etc/letsencrypt' ]
+    depends_on: [ ssl ]
     restart:    on-failure
     ports:
       - '80:5678'
       - '53589:53589'
+    environment:
+      CERT_FOLDER: /certs
     deploy:
       mode:          global
       endpoint_mode: dnsrr
@@ -43,6 +49,19 @@ services:
     environment:
       TASKD_SERVER:      taskd:53589
       SERVICE_PORTS:     5678
+    deploy:
+      mode:     replicated
+      replicas: 1
+
+  ssl:
+    image:    interaction/letsencrypt:latest
+    networks: [ private ]
+    volumes:  [ 'ssl:/etc/letsencrypt', 'certs:/certs' ]
+    environment:
+      DOMAINS:       tasks.aetheric.co.nz
+      EMAIL:         peterc@aetheric.co.nz
+      HAPROXY_IMAGE: dockercloud/haproxy:1.6.6
+      OPTIONS:       --staging
     deploy:
       mode:     replicated
       replicas: 1
