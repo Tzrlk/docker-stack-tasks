@@ -4,21 +4,32 @@ volumes:
   taskd: {}
   web:   {}
 
+networks:
+  public:  { driver: overlay, internal: false }
+  private: { driver: overlay, internal: true  }
+
+secrets: {}
+
 services:
 
-  lb:
-    image: dockercloud/haproxy:1.6.6
-    ports: [ '80:5678', '53589:53589' ]
+  proxy:
+    image:      dockercloud/haproxy:1.6.6
+    networks:   [ public, private ]
+    restart:    on-failure
+    ports:
+      - '80:5678'
+      - '53589:53589'
     deploy:
       mode:          global
       endpoint_mode: dnsrr
   
   taskd:
-    image:   andir/docker-taskd:latest
-    expose:  [ '53589' ]
-    volumes: [ 'taskd:/var/taskd' ]
+    image:    andir/docker-taskd:latest
+    expose:   [ '53589' ]
+    volumes:  [ 'taskd:/var/taskd' ]
+    networks: [ private ]
     environment:
-      TCP_PORTS: 53589
+      SERVICE_PORTS: 53589
     deploy:
       mode:     replicated
       replicas: 1
@@ -27,11 +38,11 @@ services:
     image:      hav0k/taskwarrior-web:latest
     expose:     [ '5678' ]
     volumes:    [ 'web:/root/.task' ]
+    networks:   [ private ]
     depends_on: [ taskd ]
     environment:
-      TASKD_CREDENTIALS:
       TASKD_SERVER:      taskd:53589
-      TCP_PORTS:         5678
+      SERVICE_PORTS:     5678
     deploy:
       mode:     replicated
       replicas: 1
