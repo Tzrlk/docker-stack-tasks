@@ -1,0 +1,38 @@
+version: '3.3'
+
+volumes:
+  taskd: {}
+  web:   {}
+
+services:
+
+  lb:
+    image: dockercloud/haproxy:1.6.6
+    ports: [ '80:5678', '53589:53589' ]
+    deploy:
+      mode:          global
+      endpoint_mode: dnsrr
+  
+  taskd:
+    image:   andir/docker-taskd:latest
+    expose:  [ '53589' ]
+    volumes: [ 'taskd:/var/taskd' ]
+    environment:
+      TCP_PORTS: 53589
+    deploy:
+      mode:     replicated
+      replicas: 1
+
+  web:
+    image:      hav0k/taskwarrior-web:latest
+    expose:     [ '5678' ]
+    volumes:    [ 'web:/root/.task' ]
+    depends_on: [ taskd ]
+    environment:
+      TASKD_CREDENTIALS:
+      TASKD_SERVER:      taskd:53589
+      TCP_PORTS:         5678
+    deploy:
+      mode:     replicated
+      replicas: 1
+
