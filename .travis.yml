@@ -27,7 +27,9 @@ script: |
   echo -e "Docker cloud responded with:\n${CONNECT_RESULT}"
 
   echo "Extracting docker host address from response."
-  export DOCKER_HOST="$(echo ${CONNECT_RESULT} | grep -o "DOCKER_HOST=.\+")"
+  export DOCKER_HOST="$(echo ${CONNECT_RESULT} \
+      | grep -Po "(?<=DOCKER_HOST=).+")"
+
   if [[ -e "${DOCKER_HOST}" ]]; then
     echo >&2 "Unable to extract docker host from connection response."
     exit 1
