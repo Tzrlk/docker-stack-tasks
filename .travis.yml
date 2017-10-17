@@ -7,22 +7,32 @@ env:
   global:
     secure: C40lfi69Q6eFl2AaVI5EsKj1zkn2RsWC46AnvKkrdRRyTU6nf8tW3wIeLRCwPcoxaZtM+J+K21jgrUSiYZUAO67ZxhTyWh4ngkHpUVrrdmwkWt+kb3YSWLynsEpL4KhZ4pqVuFeFaDdGiWpCtZxWDth26ol6Ltl0RsNtL5kbDYTBZWvh+kfe8PI9ceBbqSxOSUplVfe5deDYEQqQATk6nDriRNGEx/suM6MyN5lFWdMjzZuxewgsAvCNOwc77BKPwDPgezkWdG+6yLsOjDMO2BZap9K51ejj0+/cUQyxFIkiDCCyRuVDT/3pVJxJRutSYwRYk2kk1cB0zm2M84MFEgH62yAVmYoXUFUWjF6wWJ4m+7jAxQh71NOyzwLTxIi6o6lt5yu1r8xcG4Er9lNVBl5ZNaggYAjLZ9isngWal50tBMI7YqJyXKPDSubKcVdFPOax6iUbv5V+1LlafQTS4KMfOjQrCljdvo+JGaefo8C8GHYs1LX2u5RSzDPD+VfIRXogmgxJ0J5iP9SUIKnyxQk/syD6bFYxzptVR/DdrbHTZ1wOk0YNu6VOdZbbMtBkRbmm04NqD/2z6XyiGj/xi85URfioCfgDnMCPDaRIZthgxO4g09IpwJs/fIZW6p7YJ6bSzedA+46rkAF3BQ0JRIKBSPCms9o13K1cKIP7Pm4=
 
+install:
+  - docker pull dockercloud/client
+
 script: |
 
   echo "Validating that the config isn't malformed."
-  docker-compose config
+  docker-compose config || {
+    echo >&2 "Unable to validate config."
+    exit 1
+  }
 
   DSOCK=/var/run/docker.sock
 
   echo "Attempting to connect to the remote swarm"
   CONNECT_RESULT="$(docker run -it --rm -e DOCKER_HOST -v ${DSOCK}:${DSOCK} \
       dockercloud/client -u tzrlk -p ${CLOUD_PASS} -s tzrlk/development)"
-  echo "Docker cloud responded with:\n${CONNECT_RESULT}"
+
+  echo -e "Docker cloud responded with:\n${CONNECT_RESULT}"
 
   echo "Extracting docker host address from response."
-  [[ ${CONNECT_RESULT} =~ "DOCKER_HOST=?(.+)" ]] \
-      && export DOCKER_HOST=${BASH_REMATCH[1]}
-  echo "New docker host detected as '${DOCKER_HOST}'"
+  export DOCKER_HOST="$(echo ${CONNECT_RESULT} | grep -o "DOCKER_HOST=.\+")"
+  if [[ -e "${DOCKER_HOST}" ]]; then
+    echo >&2 "Unable to extract docker host from connection response."
+    exit 1
+  fi
 
+  echo "New docker host detected as '${DOCKER_HOST}'"
   docker stack --compose-file docker-compose.yml deploy
 
