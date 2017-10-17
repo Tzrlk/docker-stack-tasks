@@ -34,5 +34,5 @@ script: |
   fi
 
   echo "New docker host detected as '${DOCKER_HOST}'"
-  docker stack --compose-file docker-compose.yml deploy
+  docker stack deploy --compose-file docker-compose.yml tasks
 
