@@ -1,4 +1,4 @@
-version: '3.2'
+version: '3.1'
 
 volumes:
   taskd: {}
@@ -19,8 +19,7 @@ services:
       - '80:5678'
       - '53589:53589'
     deploy:
-      mode:          global
-      endpoint_mode: dnsrr
+      mode: global
   
   taskd:
     image:    andir/docker-taskd:latest
