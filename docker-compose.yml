@@ -13,9 +13,8 @@ secrets: {}
 services:
 
   proxy:
-    image:      dockercloud/haproxy:1.6.6
-    networks:   [ public, private ]
-    restart:    on-failure
+    image:    dockercloud/haproxy:1.6.6
+    networks: [ public, private ]
     ports:
       - '80:5678'
       - '53589:53589'
@@ -25,7 +24,6 @@ services:
   
   taskd:
     image:    andir/docker-taskd:latest
-    expose:   [ '53589' ]
     volumes:  [ 'taskd:/var/taskd' ]
     networks: [ private ]
     environment:
@@ -36,7 +34,6 @@ services:
 
   web:
     image:      hav0k/taskwarrior-web:latest
-    expose:     [ '5678' ]
     volumes:    [ 'web:/root/.task' ]
     networks:   [ private ]
     depends_on: [ taskd ]

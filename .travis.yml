@@ -1,0 +1,27 @@
+sudo: required
+
+services:
+  - docker
+
+env:
+  CLOUD_PASS:
+
+script: |
+
+  echo "Validating that the config isn't malformed."
+  docker-compose config
+
+  DSOCK=/var/run/docker.sock
+
+  echo "Attempting to connect to the remote swarm"
+  CONNECT_RESULT="$(docker run -it --rm -e DOCKER_HOST -v ${DSOCK}:${DSOCK} \
+      dockercloud/client -u tzrlk -p ${CLOUD_PASS} -s tzrlk/development)"
+
+  echo "Extracting docker host address from response."
+  [[ ${CONNECT_RESULT} =~ "DOCKER_HOST=?(.+)" ]] \
+      && export DOCKER_HOST=${BASH_REMATCH[1]}
+
+  echo "New docker host detected as '${DOCKER_HOST}'"
+
+  docker stack -c docker-compose.yml deploy
+
